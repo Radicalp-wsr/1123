@@ -422,6 +422,12 @@ final class AppViewModel: ObservableObject {
 
                 checks.append(.init(id: "iface", label: "Active Interface", value: "\(portName) (\(device))", isWarning: false))
                 checks.append(.init(id: "vpn", label: "VPN", value: "Not detected", isWarning: false))
+
+                // MAC spoofing warning is only relevant when the active interface is Wi-Fi
+                if let kind = try? ShellCommands.classifySupportedInterface(hardwarePortName: portName),
+                   kind == .wifi && ShellCommands.isMacSpoofingBlockedOnWiFi() {
+                    checks.append(.init(id: "macspoof", label: "MAC Spoofing", value: "Blocked on Wi-Fi (Apple Silicon + macOS 14+)", isWarning: true))
+                }
             } catch {
                 let msg = error.localizedDescription
                 if msg.contains("VPN detected") {
@@ -433,11 +439,6 @@ final class AppViewModel: ObservableObject {
 
             // Admin prompts expected (MAC spoofing + DNS flush both need admin)
             checks.append(.init(id: "admin", label: "Admin Prompts", value: "Expected", isWarning: false))
-
-            // MAC spoofing availability
-            if ShellCommands.isMacSpoofingBlockedOnWiFi() {
-                checks.append(.init(id: "macspoof", label: "MAC Spoofing", value: "Blocked on Wi-Fi (Apple Silicon + macOS 14+)", isWarning: true))
-            }
 
             preflight = PreflightInfo(status: .ready, checks: checks)
         }
@@ -676,7 +677,7 @@ If your network connection is disrupted after this step:
 
         return MACSpoofResult(
             summary: combinedSummary,
-            hasWarning: combinedSummary.contains("Warning:")
+            hasWarning: !macVerified
         )
     }
 
