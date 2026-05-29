@@ -231,10 +231,17 @@ Turn off your VPN, wait a few seconds for your normal connection to restore, and
         return String(bytes: values, encoding: .ascii) ?? "unknown"
     }
 
-    static func isMacSpoofingBlockedOnWiFi() -> Bool {
+    /// Returns true when the OS blocks ifconfig-based MAC address changes.
+    /// On Apple Silicon + macOS 14+ this applies to all network interfaces, not just Wi-Fi.
+    static func isMacSpoofingBlocked() -> Bool {
         let isAppleSilicon = machineArchitecture() == "arm64"
         let isMacOS14OrLater = ProcessInfo.processInfo.operatingSystemVersion.majorVersion >= 14
         return isAppleSilicon && isMacOS14OrLater
+    }
+
+    // Kept for call sites that are specifically about Wi-Fi.
+    static func isMacSpoofingBlockedOnWiFi() -> Bool {
+        return isMacSpoofingBlocked()
     }
 
     // MARK: - Private Wi-Fi Address (Rotating MAC)
@@ -256,6 +263,20 @@ Turn off your VPN, wait a few seconds for your normal connection to restore, and
         let sleep2 = "/bin/sleep 2"
         // Always run `on`, regardless of whether `off` succeeded
         return "{ \(off); \(sleep1); } 2>/dev/null || true; \(on); \(sleep2)"
+    }
+
+    // MARK: - Service Recycle (no MAC change)
+
+    /// Cycles an interface and its network service without attempting a MAC change.
+    /// Used when MAC spoofing is known to be blocked (e.g. Ethernet on Apple Silicon + macOS 14+).
+    static func makeRecycleServiceCommand(device: String, networkService: String) -> String {
+        let down = "/sbin/ifconfig \(shellSingleQuote(device)) down"
+        let up = "/sbin/ifconfig \(shellSingleQuote(device)) up"
+        let disable = "/usr/sbin/networksetup -setnetworkserviceenabled \(shellSingleQuote(networkService)) off"
+        let enable = "/usr/sbin/networksetup -setnetworkserviceenabled \(shellSingleQuote(networkService)) on"
+        let sleep1 = "/bin/sleep 1"
+        let sleep2 = "/bin/sleep 2"
+        return "\(down) 2>/dev/null || true; \(sleep1); \(up) 2>/dev/null || true; \(sleep1); \(disable) 2>/dev/null || true; \(sleep1); \(enable); \(sleep2)"
     }
 
     // MARK: - MAC Spoof Command

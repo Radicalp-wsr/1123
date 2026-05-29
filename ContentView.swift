@@ -364,8 +364,11 @@ final class AppViewModel: ObservableObject {
 
                 if let kind = try? ShellCommands.classifySupportedInterface(hardwarePortName: portName) {
                     results.append("Interface type: \(kind.rawValue)")
-                    if kind == .wifi && ShellCommands.isMacSpoofingBlockedOnWiFi() {
-                        results.append("MAC spoofing: BLOCKED (Apple Silicon + macOS 14+)")
+                    let isBlocked = ShellCommands.isMacSpoofingBlocked()
+                    if kind == .wifi && isBlocked {
+                        results.append("MAC spoofing: BLOCKED on Wi-Fi (Apple Silicon + macOS 14+) — will use Private Wi-Fi Address")
+                    } else if kind == .ethernet && isBlocked {
+                        results.append("MAC spoofing: BLOCKED on Ethernet (Apple Silicon + macOS 14+) — sandbox launch will hide MAC from Zoom")
                     } else {
                         results.append("MAC spoofing: Available")
                     }
@@ -423,10 +426,14 @@ final class AppViewModel: ObservableObject {
                 checks.append(.init(id: "iface", label: "Active Interface", value: "\(portName) (\(device))", isWarning: false))
                 checks.append(.init(id: "vpn", label: "VPN", value: "Not detected", isWarning: false))
 
-                // MAC spoofing warning is only relevant when the active interface is Wi-Fi
+                // MAC spoofing warning is interface-specific
                 if let kind = try? ShellCommands.classifySupportedInterface(hardwarePortName: portName),
-                   kind == .wifi && ShellCommands.isMacSpoofingBlockedOnWiFi() {
-                    checks.append(.init(id: "macspoof", label: "MAC Spoofing", value: "Blocked on Wi-Fi (Apple Silicon + macOS 14+)", isWarning: true))
+                   ShellCommands.isMacSpoofingBlocked() {
+                    if kind == .wifi {
+                        checks.append(.init(id: "macspoof", label: "MAC Spoofing", value: "Blocked on Wi-Fi (Apple Silicon + macOS 14+) — will use Private Wi-Fi Address", isWarning: true))
+                    } else if kind == .ethernet {
+                        checks.append(.init(id: "macspoof", label: "MAC Spoofing", value: "Blocked on Ethernet (Apple Silicon + macOS 14+) — sandbox launch hides MAC from Zoom", isWarning: true))
+                    }
                 }
             } catch {
                 let msg = error.localizedDescription
@@ -606,6 +613,12 @@ Last action status: \(lastStatus)
             return try await resetPrivateWiFiAddressAndReconnect(networkService: interface.networkService, device: interface.device)
         }
 
+        // On Apple Silicon + macOS 14+, ifconfig MAC changes are blocked on Ethernet too.
+        // Skip the doomed spoof attempt and just recycle the service.
+        if interface.kind == .ethernet && ShellCommands.isMacSpoofingBlocked() {
+            return try await recycleEthernetServiceBlocked(networkService: interface.networkService, device: interface.device)
+        }
+
         let spoofedMAC = try ShellCommands.generateRandomMACAddress()
         let spoofScript = ShellCommands.makeSpoofCommand(device: interface.device, spoofedMAC: spoofedMAC, networkService: interface.networkService)
 
@@ -629,7 +642,7 @@ Network recovery: Your network interface may be in an inconsistent state. To res
   1. Open System Settings > Network
   2. Find '\(interface.networkService)' and turn it off, then on again
   3. Or run in Terminal: sudo /sbin/ifconfig \(interface.device) up
-  4. If Wi-Fi is disconnected, click the Wi-Fi menu and reconnect to your network
+  4. If the interface is disconnected, reconnect it and try again
 """)
             throw error
         }
@@ -653,13 +666,9 @@ Network recovery: Your network interface may be in an inconsistent state. To res
             appendLog("  \(spoofScript)")
             summary = """
 Warning: MAC address was not changed on \(interface.kind.rawValue) (\(interface.device)). \(detail)
-This is a known macOS limitation on Apple Silicon Macs (macOS Sonoma 14 and later): \
-the OS blocks Wi-Fi MAC spoofing at the driver level. Zoom will likely still show error 1132.
 What you can try:
-  1. Connect via Ethernet — MAC spoofing still works on Ethernet adapters.
-  2. Use your phone as a hotspot — this gives you a different network identity entirely.
-  3. Turn on Private Wi-Fi Address for your network in System Settings > Wi-Fi, \
-disconnect, and reconnect before running Start Zoom again.
+  1. Use your phone as a hotspot — this gives you a different network identity entirely.
+  2. Try a different network adapter if available.
 If your network connection is disrupted after this step:
   - Open System Settings > Network and toggle '\(interface.networkService)' off then on
   - Or run in Terminal: sudo /sbin/ifconfig \(interface.device) up
@@ -678,6 +687,39 @@ If your network connection is disrupted after this step:
         return MACSpoofResult(
             summary: combinedSummary,
             hasWarning: !macVerified
+        )
+    }
+
+    /// Handles Ethernet on Apple Silicon + macOS 14+: ifconfig MAC changes are blocked by the OS.
+    /// Skips the spoof attempt, recycles the network service, and reports that the sandbox launch
+    /// will handle hiding the MAC address from Zoom.
+    private func recycleEthernetServiceBlocked(networkService: String, device: String) async throws -> MACSpoofResult {
+        appendLog("Ethernet MAC spoofing is blocked on Apple Silicon + macOS 14+. Recycling network service instead.")
+
+        let recycleCmd = ShellCommands.makeRecycleServiceCommand(device: device, networkService: networkService)
+        let recycleScript = ShellCommands.appleScriptDoShellScript(recycleCmd, administratorPrivileges: true)
+
+        do {
+            _ = try await runProcess(
+                stepName: "Recycle Ethernet service",
+                executable: Constants.osascriptPath,
+                arguments: ["-e", recycleScript],
+                timeout: 30
+            )
+        } catch {
+            return MACSpoofResult(
+                summary: """
+Warning: Could not recycle Ethernet service '\(networkService)': \(error.localizedDescription)
+ifconfig-based MAC spoofing is blocked on Apple Silicon + macOS 14+ for all interfaces. \
+The sandbox launch will still block Zoom from reading your hardware MAC address.
+""",
+                hasWarning: true
+            )
+        }
+
+        return MACSpoofResult(
+            summary: "Ethernet service '\(networkService)' recycled. MAC spoofing via ifconfig is blocked on Apple Silicon + macOS 14+ — the sandbox launch will hide your MAC address from Zoom.",
+            hasWarning: false
         )
     }
 
