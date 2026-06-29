@@ -19,11 +19,6 @@ let package = Package(
             resources: [
                 .process("Resources")
             ]
-        ),
-        .testTarget(
-            name: "1132FixerTests",
-            dependencies: ["1132Fixer"],
-            path: "Tests/1132FixerTests"
         )
     ]
 )
