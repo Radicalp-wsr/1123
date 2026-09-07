@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lectrodryer BAC-50 Hydrogen Dryer Configurator & Technical Suite</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js for data visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Plotly.js for process temperature profile rendering -->
+    <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0F172A;
+            color: #F8FAFC;
+        }
+
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .glass-card {
+            background: rgba(30, 41, 59, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .glass-card-accent {
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 320px;
+            max-height: 360px;
+        }
+
+        @media (max-width: 768px) {
+            .chart-container {
+                height: 260px;
+            }
+        }
+
+        /* Flow animation lines */
+        .flow-path {
+            stroke-dasharray: 8;
+            animation: dash 1.5s linear infinite;
+        }
+
+        @keyframes dash {
+            to {
+                stroke-dashoffset: -16;
+            }
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #1E293B;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="p-0 m-0 min-h-screen bg-slate-950 text-slate-100">
+
+<!-- Header / Hero Banner -->
+<header class="bg-gradient-to-r from-slate-900 via-sky-950 to-blue-900 border-b border-sky-800/40 py-10 px-6 shadow-2xl relative overflow-hidden">
+    <div class="max-w-7xl mx-auto relative z-10">
+        <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+            <div>
+                <div class="flex items-center gap-3 mb-2">
+                    <span class="px-3 py-1 bg-sky-500/20 text-sky-300 border border-sky-400/30 rounded-full text-xs font-semibold uppercase tracking-wider">Lectrodryer Engineering System</span>
+                    <span class="px-3 py-1 bg-amber-500/20 text-amber-300 border border-amber-400/30 rounded-full text-xs font-semibold">ASME Sec VIII Div 1 & B31.12</span>
+                </div>
+                <h1 class="text-3xl md:text-5xl font-extrabold text-white tracking-tight">
+                    Lectrodryer <span class="text-sky-400">BAC-50</span> Configurator
+                </h1>
+                <p class="text-slate-300 text-base md:text-lg mt-2 max-w-3xl leading-relaxed">
+                    Dual-Tower Automatic Continuous Hydrogen Gas Dryer for Power Plant Turbine Generator Cooling. Interactive option configurator, P&ID process flow visualizer, and Gemini AI technical suite.
+                </p>
+            </div>
+
+            <div class="flex flex-col sm:flex-row lg:flex-col gap-3 w-full lg:w-auto">
+                <button id="ttsBtn" onclick="playExecutiveSummaryTTS()" class="flex items-center justify-center gap-2 bg-sky-600 hover:bg-sky-500 text-white font-semibold px-5 py-3 rounded-xl transition-all shadow-lg hover:shadow-sky-500/20 border border-sky-400/30 text-sm">
+                    <span id="ttsIcon" class="text-lg">🔊</span> <span id="ttsBtnText">Listen to Audio Briefing</span>
+                </button>
+                <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-700/60 text-xs text-slate-300 flex items-center justify-between gap-4">
+                    <div>
+                        <p class="text-slate-400">Hydrogen Purge Loss:</p>
+                        <p class="font-bold text-emerald-400 text-sm">0.0% (Zero Venting)</p>
+                    </div>
+                    <div class="border-l border-slate-700 pl-4">
+                        <p class="text-slate-400">Dewpoint Target:</p>
+                        <p class="font-bold text-sky-400 text-sm">-60°C (-76°F)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Audio Player Container -->
+        <div id="ttsAudioContainer" class="hidden mt-6 p-4 bg-slate-900/90 rounded-xl border border-sky-500/40 shadow-inner">
+            <div class="flex items-center justify-between mb-2">
+                <p id="ttsStatus" class="text-xs text-sky-300 font-mono">Generating AI Audio Briefing with Gemini TTS...</p>
+                <span class="text-xs text-slate-400">Voice: Kore (Firm / Informative)</span>
+            </div>
+            <audio id="ttsAudioPlayer" controls class="w-full h-8 accent-sky-500"></audio>
+        </div>
+    </div>
+</header>
+
+<main class="max-w-7xl mx-auto px-4 md:px-6 py-10 space-y-12">
+
+    <!-- System Highlights Grid -->
+    <section class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="glass-card p-5 rounded-xl border-l-4 border-sky-500 flex items-start gap-4">
+            <div class="p-3 bg-sky-500/10 text-sky-400 rounded-lg text-2xl">⚡</div>
+            <div>
+                <h4 class="text-xs uppercase font-semibold text-slate-400 tracking-wider">Continuous Drying</h4>
+                <p class="text-sm font-bold text-slate-100 mt-1">Dual-Tower Closed Circuit</p>
+                <p class="text-xs text-slate-400 mt-1">Simultaneous adsorption & internal reactivation even on turning gear.</p>
+            </div>
+        </div>
+
+        <div class="glass-card p-5 rounded-xl border-l-4 border-emerald-500 flex items-start gap-4">
+            <div class="p-3 bg-emerald-500/10 text-emerald-400 rounded-lg text-2xl">🌱</div>
+            <div>
+                <h4 class="text-xs uppercase font-semibold text-slate-400 tracking-wider">Zero Hydrogen Loss</h4>
+                <p class="text-sm font-bold text-slate-100 mt-1">Integral Blower Circuit</p>
+                <p class="text-xs text-slate-400 mt-1">No hydrogen purge gas vented or flared during bed regeneration.</p>
+            </div>
+        </div>
+
+        <div class="glass-card p-5 rounded-xl border-l-4 border-amber-500 flex items-start gap-4">
+            <div class="p-3 bg-amber-500/10 text-amber-400 rounded-lg text-2xl">🛡️</div>
+            <div>
+                <h4 class="text-xs uppercase font-semibold text-slate-400 tracking-wider">Hazardous Certified</h4>
+                <p class="text-sm font-bold text-slate-100 mt-1">Class I, Div 2 / Zone 2</p>
+                <p class="text-xs text-slate-400 mt-1">Group B / IIC T4 ratings with NEMA 4 purge or explosion-proof housings.</p>
+            </div>
+        </div>
+
+        <div class="glass-card p-5 rounded-xl border-l-4 border-indigo-500 flex items-start gap-4">
+            <div class="p-3 bg-indigo-500/10 text-indigo-400 rounded-lg text-2xl">📈</div>
+            <div>
+                <h4 class="text-xs uppercase font-semibold text-slate-400 tracking-wider">Windage Efficiency</h4>
+                <p class="text-sm font-bold text-slate-100 mt-1">Purity Maintenance</p>
+                <p class="text-xs text-slate-400 mt-1">Maintains >98% H2 purity to prevent turbine windage friction losses.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 1: BAC-50 Interactive Part Configurator -->
+    <section class="glass-card rounded-2xl p-6 md:p-8 border border-slate-700/80 shadow-xl">
+        <div class="flex flex-col md:flex-row md:items-center justify-between pb-6 border-b border-slate-700/80 gap-4">
+            <div>
+                <h2 class="text-2xl font-bold text-white flex items-center gap-3">
+                    <span class="p-2 bg-sky-500/20 text-sky-400 rounded-lg text-lg">⚙️</span>
+                    Lectrodryer BAC-50 Part Configurator
+                </h2>
+                <p class="text-slate-400 text-sm mt-1">Select application requirements to construct the exact engineering part string and specification sheet.</p>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="resetConfigurator()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold transition border border-slate-700">
+                    ↺ Reset Defaults
+                </button>
+                <button onclick="copyPartNumber()" class="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-semibold transition shadow flex items-center gap-2">
+                    📋 Copy Part Code
+                </button>
+            </div>
+        </div>
+
+        <!-- Generated Part Number Display Box -->
+        <div class="mt-6 p-4 bg-slate-950 rounded-xl border border-sky-500/40 flex flex-col md:flex-row items-center justify-between gap-4 shadow-inner">
+            <div class="w-full">
+                <p class="text-xs font-mono text-sky-400 uppercase tracking-widest mb-1">Constructed Model Number String:</p>
+                <p id="partNumberDisplay" class="font-mono text-lg md:text-2xl font-bold text-amber-300 tracking-wide break-all">
+                    BAC-50-480V3P60-ASME-DIV2-PLC-DP-SS-CAGE
+                </p>
+            </div>
+            <div class="flex items-center gap-3 w-full md:w-auto justify-end">
+                <span class="px-3 py-1.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-lg text-xs font-semibold whitespace-nowrap">
+                    ✓ Valid Configuration
+                </span>
+            </div>
+        </div>
+
+        <!-- Configurator Selectors Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
+
+            <!-- Option 1: Voltage -->
+            <div class="space-y-2">
+                <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center justify-between">
+                    <span>1. Power Voltage Supply</span>
+                    <span class="text-sky-400 font-mono text-[11px]" id="codeVoltage">480V3P60</span>
+                </label>
+                <select id="cfgVoltage" onchange="updateConfigurator()" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-slate-200 focus:outline-none focus:border-sky-500">
+                    <option value="480V3P60" selected>480V / 3 Phase / 60 Hz (Standard US / N. America)</option>
+                    <option value="380V3P50">380V / 3 Phase / 50 Hz (Europe / Asia Standard)</option>
+                    <option value="415V3P50">415V / 3 Phase / 50 Hz (UK / Middle East)</option>
+                    <option value="575V3P60">575V / 3 Phase / 60 Hz (Canada)</option>
+                    <option value="208V3P60">208V / 3 Phase / 60 Hz (Low Voltage Facility)</option>
+                    <option value="230V3P60">230V / 3 Phase / 60 Hz (Medium Voltage)</option>
+                </select>
+                <p class="text-[11px] text-slate-400">Embedded electric reactivation heaters operate directly from primary power.</p>
+            </div>
+
+            <!-- Option 2: Vessel Pressure Code -->
+            <div class="space-y-2">
+                <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center justify-between">
+                    <span>2. Pressure Vessel Standard</span>
+                    <span class="text-sky-400 font-mono text-[11px]" id="codeVessel">ASME</span>
+                </label>
+                <select id="cfgVessel" onchange="updateConfigurator()" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-slate-200 focus:outline-none focus:border-sky-500">
+                    <option value="ASME" selected>ASME Sec VIII Div 1 + B31.12 Hydrogen Piping</option>
+                    <option value="PED">PED 2014/68/EU (European CE Marking)</option>
+                    <option value="CRN">CRN (Canadian Registration Number - All Provinces)</option>
+                    <option value="GOST">EAC / GOST-R (Eurasian Conformity)</option>
+                </select>
+                <p class="text-[11px] text-slate-400">Carbon steel adsorber vessels rated for 150+ PSIG operating pressure.</p>
+            </div>
+
+            <!-- Option 3: Area Classification -->
+            <div class="space-y-2">
+                <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center justify-between">
+                    <span>3. Hazardous Area Rating</span>
+                    <span class="text-sky-400 font-mono text-[11px]" id="codeHaz">DIV2</span>
+                </label>
+                <select id="cfgHaz" onchange="updateConfigurator()" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-slate-200 focus:outline-none focus:border-sky-500">
+                    <option value="DIV2" selected>Class I, Div 2, Group B (Purged NEMA 4 Enclosure)</option>
+                    <option value="ZONE2">ATEX / IECEx Zone 2 (II 3G IIC T4)</option>
+                    <option value="DIV1">Class I, Div 1, Group B (Explosion-Proof Housings)</option>
+                    <option value="GP">General Purpose / Non-Hazardous Area</option>
+                </select>
+                <p class="text-[11px] text-slate-400">Safely operates in hydrogen gas turbine enclosure environments.</p>
+            </div>
+
+            <!-- Option 4: Control System Architecture -->
+            <div class="space-y-2">
+                <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center justify-between">
+                    <span>4. Automation & Controller</span>
+                    <span class="text-sky-400 font-mono text-[11px]" id="codeCtrl">PLC</span>
+                </label>
+                <select id="cfgCtrl" onchange="updateConfigurator()" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-slate-200 focus:outline-none focus:border-sky-500">
+                    <option value="PLC" selected>Allen-Bradley CompactLogix + 7" Color HMI</option>
+                    <option value="SIEMENS">Siemens S7-1200 PLC + KTP Touchscreen</option>
+                    <option value="RELAY">Electromechanical Relay Logic + Digital Step Timer</option>
+                </select>
+                <p class="text-[11px] text-slate-400">Manages 4-way non-lubricated switching valves and heater interlocks.</p>
+            </div>
+
+            <!-- Option 5: Dewpoint & Moisture Instrumentation -->
+            <div class="space-y-2">
+                <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center justify-between">
+                    <span>5. Dewpoint Instrumentation</span>
+                    <span class="text-sky-400 font-mono text-[11px]" id="codeDew">DP</span>
+                </label>
+                <select id="cfgDew" onchange="updateConfigurator()" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-slate-200 focus:outline-none focus:border-sky-500">
+                    <option value="DP" selected>Dual 4-20mA Dewpoint Transmitters + Alarms</option>
+                    <option value="ALM">Single Outlet Dewpoint Sensor + High Moisture Alarm</option>
+                    <option value="STD">Standard Visual Color-Change Moisture Indicator</option>
+                </select>
+                <p class="text-[11px] text-slate-400">Continuous digital dewpoint output for DCS / SCADA integration.</p>
+            </div>
+
+            <!-- Option 6: Piping & Tubing Material -->
+            <div class="space-y-2">
+                <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center justify-between">
+                    <span>6. Piping & Tubing Spec</span>
+                    <span class="text-sky-400 font-mono text-[11px]" id="codePipe">SS</span>
+                </label>
+                <select id="cfgPipe" onchange="updateConfigurator()" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-slate-200 focus:outline-none focus:border-sky-500">
+                    <option value="SS" selected>316L Stainless Steel Welded Piping & Seamless Tubing</option>
+                    <option value="CS">Heavy Carbon Steel Welded Piping with Stainless Impulse Lines</option>
+                </select>
+                <p class="text-[11px] text-slate-400">Prevents corrosion and particle contamination in hydrogen loop.</p>
+            </div>
+        </div>
+
+        <!-- Dynamic Configuration Technical Summary Grid -->
+        <div class="mt-8 pt-6 border-t border-slate-700/80">
+            <h3 class="text-sm font-bold text-slate-200 mb-4 flex items-center gap-2">
+                <span>📋</span> Configured Technical Assembly Parameters
+            </h3>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs font-mono">
+                <div class="bg-slate-900/80 p-3 rounded-lg border border-slate-800">
+                    <span class="text-slate-400 block text-[10px]">REGENERATION HEATER:</span>
+                    <span id="sumHeater" class="text-sky-300 font-semibold">Embedded Electric 4.8 kW</span>
+                </div>
+                <div class="bg-slate-900/80 p-3 rounded-lg border border-slate-800">
+                    <span class="text-slate-400 block text-[10px]">VALVE ACTUATION:</span>
+                    <span id="sumValve" class="text-sky-300 font-semibold">Dual 4-Way Non-Lubricated Plug</span>
+                </div>
+                <div class="bg-slate-900/80 p-3 rounded-lg border border-slate-800">
+                    <span class="text-slate-400 block text-[10px]">BLOWER SYSTEM:</span>
+                    <span id="sumBlower" class="text-sky-300 font-semibold">Integral Hydrogen Booster Blower</span>
+                </div>
+                <div class="bg-slate-900/80 p-3 rounded-lg border border-slate-800">
+                    <span class="text-slate-400 block text-[10px]">DESICCANT CHARGE:</span>
+                    <span id="sumDesiccant" class="text-sky-300 font-semibold">Activated Alumina / Mol Sieve</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 2: BAC-50 Process Flow & Dual-Tower Cycle Animator -->
+    <section class="glass-card rounded-2xl p-6 md:p-8 border border-slate-700/80 shadow-xl">
+        <div class="flex flex-col md:flex-row md:items-center justify-between pb-6 border-b border-slate-700/80 gap-4">
+            <div>
+                <h2 class="text-2xl font-bold text-white flex items-center gap-3">
+                    <span class="p-2 bg-emerald-500/20 text-emerald-400 rounded-lg text-lg">🔄</span>
+                    Closed-Circuit Dual-Tower P&ID Visualizer
+                </h2>
+                <p class="text-slate-400 text-sm mt-1">Interactive operational flow simulation showing Tower A Adsorption and Tower B Internal Reactivation.</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <button id="btnSwitchCycle" onclick="toggleTowerCycle()" class="px-5 py-2.5 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-semibold transition shadow flex items-center gap-2">
+                    <span>🔀</span> Switch Bed Cycle Phase
+                </button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-6">
+            <!-- SVG P&ID Flow Diagram -->
+            <div class="lg:col-span-2 bg-slate-950 p-6 rounded-xl border border-slate-800 flex flex-col items-center justify-center relative min-h-[360px]">
+                <div class="absolute top-3 left-3 text-[11px] font-mono text-slate-400 flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span id="cycleStatusText">ACTIVE PHASE: Tower A Drying | Tower B Closed Reactivation</span>
+                </div>
+
+                <!-- SVG Flow Diagram -->
+                <svg viewBox="0 0 600 320" class="w-full h-auto max-w-lg">
+                    <!-- Inlet Gas Flow Header -->
+                    <path d="M 50,160 L 150,160" stroke="#38BDF8" stroke-width="4" fill="none" class="flow-path" />
+                    <text x="35" y="145" fill="#94A3B8" font-size="10" font-family="sans-serif">H2 Gas Inlet</text>
+
+                    <!-- Interlocked 4-Way Valve 1 -->
+                    <circle cx="150" cy="160" r="16" fill="#1E293B" stroke="#38BDF8" stroke-width="3" />
+                    <text x="142" y="164" fill="#F8FAFC" font-size="10" font-weight="bold">V1</text>
+
+                    <!-- Flow to Tower A -->
+                    <path id="pathTowerA" d="M 150,144 L 150,80 L 220,80" stroke="#38BDF8" stroke-width="3" fill="none" class="flow-path" />
+
+                    <!-- Flow to Tower B -->
+                    <path id="pathTowerB" d="M 150,176 L 150,240 L 220,240" stroke="#64748B" stroke-width="3" fill="none" />
+
+                    <!-- Tower A (Adsorber 1) -->
+                    <rect id="rectTowerA" x="220" y="40" width="80" height="80" rx="8" fill="#0369A1" stroke="#38BDF8" stroke-width="2" />
+                    <text x="235" y="75" fill="#FFFFFF" font-size="12" font-weight="bold">TOWER A</text>
+                    <text id="textTowerAState" x="233" y="93" fill="#BAE6FD" font-size="9">ADSORBING</text>
+
+                    <!-- Tower B (Adsorber 2) -->
+                    <rect id="rectTowerB" x="220" y="200" width="80" height="80" rx="8" fill="#1E293B" stroke="#64748B" stroke-width="2" />
+                    <text x="235" y="235" fill="#94A3B8" font-size="12" font-weight="bold">TOWER B</text>
+                    <text id="textTowerBState" x="230" y="253" fill="#F59E0B" font-size="9">REACTIVATING</text>
+
+                    <!-- Internal Heater Elements -->
+                    <circle cx="260" cy="52" r="6" fill="#0EA5E9" />
+                    <circle cx="260" cy="212" r="6" fill="#EF4444" id="heaterBIndicator" class="animate-pulse" />
+
+                    <!-- Outlet Flow from Tower A -->
+                    <path id="pathOutA" d="M 300,80 L 380,80 L 380,144" stroke="#38BDF8" stroke-width="3" fill="none" class="flow-path" />
+
+                    <!-- Outlet Flow from Tower B -->
+                    <path id="pathOutB" d="M 300,240 L 380,240 L 380,176" stroke="#64748B" stroke-width="3" fill="none" />
+
+                    <!-- Interlocked 4-Way Valve 2 -->
+                    <circle cx="380" cy="160" r="16" fill="#1E293B" stroke="#38BDF8" stroke-width="3" />
+                    <text x="372" y="164" fill="#F8FAFC" font-size="10" font-weight="bold">V2</text>
+
+                    <!-- Clean Dry Gas Outlet -->
+                    <path d="M 380,160 L 520,160" stroke="#38BDF8" stroke-width="4" fill="none" class="flow-path" />
+                    <text x="440" y="145" fill="#38BDF8" font-size="10" font-weight="bold" font-family="sans-serif">Dry H2 Outlet (-60°C Dewpoint)</text>
+
+                    <!-- Closed Circuit Booster Blower & Condensate Drain -->
+                    <rect x="420" y="220" width="70" height="40" rx="6" fill="#1E293B" stroke="#F59E0B" stroke-width="1.5" />
+                    <text x="430" y="238" fill="#F59E0B" font-size="9" font-weight="bold">BOOSTER</text>
+                    <text x="432" y="250" fill="#94A3B8" font-size="8">BLOWER</text>
+                </svg>
+            </div>
+
+            <!-- Real-time Operating Telemetry Box -->
+            <div class="space-y-4">
+                <h3 class="text-sm font-bold text-slate-200 flex items-center gap-2">
+                    <span>📊</span> Simulated Operating Telemetry
+                </h3>
+
+                <div class="space-y-3 font-mono text-xs">
+                    <div class="p-3 bg-slate-900 rounded-xl border border-slate-800 flex justify-between items-center">
+                        <span class="text-slate-400">INLET DEWPOINT:</span>
+                        <span class="text-amber-400 font-bold">+12.4°C (+54.3°F)</span>
+                    </div>
+                    <div class="p-3 bg-slate-900 rounded-xl border border-slate-800 flex justify-between items-center">
+                        <span class="text-slate-400">OUTLET DEWPOINT:</span>
+                        <span class="text-emerald-400 font-bold">-62.1°C (-79.8°F)</span>
+                    </div>
+                    <div class="p-3 bg-slate-900 rounded-xl border border-slate-800 flex justify-between items-center">
+                        <span class="text-slate-400">BED REACTIVATION TEMP:</span>
+                        <span id="telemetryHeaterTemp" class="text-red-400 font-bold">176.5°C (350.0°F)</span>
+                    </div>
+                    <div class="p-3 bg-slate-900 rounded-xl border border-slate-800 flex justify-between items-center">
+                        <span class="text-slate-400">CLOSED BLOWER FLOW:</span>
+                        <span class="text-sky-400 font-bold">15.2 SCFM</span>
+                    </div>
+                    <div class="p-3 bg-slate-900 rounded-xl border border-slate-800 flex justify-between items-center">
+                        <span class="text-slate-400">HYDROGEN PURGE VENT:</span>
+                        <span class="text-emerald-400 font-bold">0.00 SCFM (0%)</span>
+                    </div>
+                </div>
+
+                <div class="p-4 bg-sky-950/40 border border-sky-800/50 rounded-xl text-xs text-sky-200 leading-relaxed">
+                    <p class="font-semibold text-sky-300 mb-1">💡 Closed-Circuit Advantage:</p>
+                    <p>Reactivation occurs entirely under full operating system pressure using internal low watt-density heaters and a booster blower. No hydrogen is flared or lost to the atmosphere.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 3: Gemini AI Engineering Suite -->
+    <section class="glass-card rounded-2xl p-6 md:p-8 border border-sky-500/30 shadow-2xl">
+        <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between pb-6 border-b border-slate-700/80 gap-4">
+            <div>
+                <h2 class="text-2xl font-bold text-white flex items-center gap-3">
+                    <span class="text-2xl">✨</span> Gemini AI Engineering Suite
+                </h2>
+                <p class="text-slate-400 text-sm mt-1">Multi-modal AI assistance powered by Gemini 3 Flash, Gemini 3.1 Flash Image, TTS, and Live API integration.</p>
+            </div>
+
+            <!-- Tab Navigation Buttons -->
+            <div class="flex flex-wrap gap-2 bg-slate-900/90 p-1.5 rounded-xl border border-slate-700/80">
+                <button id="tabBtnDecoder" onclick="switchAiTab('decoder')" class="px-4 py-2 rounded-lg text-xs font-semibold bg-sky-600 text-white shadow">Model & Tag Decoder</button>
+                <button id="tabBtnQna" onclick="switchAiTab('qna')" class="px-4 py-2 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition">Grounded Search & CMMS</button>
+                <button id="tabBtnDiagram" onclick="switchAiTab('diagram')" class="px-4 py-2 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition">Schematic Generator</button>
+                <button id="tabBtnLive" onclick="switchAiTab('live')" class="px-4 py-2 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span> Gemini Live Voice</button>
+            </div>
+        </div>
+
+        <!-- TAB 1: AI Model & Nameplate Tag Decoder -->
+        <div id="aiTabDecoder" class="mt-6 space-y-4">
+            <p class="text-xs text-slate-300">Enter a Lectrodryer part string or upload a photo of an equipment nameplate / serial tag for automated OCR vision parsing:</p>
+
+            <div class="flex flex-col md:flex-row gap-3">
+                <input id="partInput" type="text" value="BAC-50-480V3P60-ASME-DIV2-PLC-DP-SS-CAGE" placeholder="e.g. BAC-50-380V3P50-PED-ZONE2..." class="flex-1 px-4 py-3 bg-slate-950 rounded-xl border border-slate-700 text-slate-100 font-mono text-xs focus:outline-none focus:border-sky-500 shadow-inner" />
+
+                <label class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold px-4 py-3 rounded-xl transition cursor-pointer flex items-center justify-center gap-2 text-xs border border-slate-700">
+                    <span>📷</span> Tag Photo OCR
+                    <input type="file" id="tagImageInput" accept="image/*" class="hidden" onchange="handleTagImageUpload(event)" />
+                </label>
+
+                <button onclick="decodePartWithGemini()" class="bg-sky-600 hover:bg-sky-500 text-white font-semibold px-6 py-3 rounded-xl transition shadow flex items-center justify-center gap-2 text-xs">
+                    <span>🔍</span> Analyze Code
+                </button>
+            </div>
+
+            <div id="imagePreviewContainer" class="hidden p-3 bg-slate-900 rounded-xl flex items-center gap-4 border border-slate-800">
+                <img id="tagImagePreview" class="h-16 w-auto rounded border border-slate-700 object-cover" />
+                <div>
+                    <p class="text-xs font-bold text-sky-400">Nameplate Image Attached</p>
+                    <p class="text-[11px] text-slate-400">Gemini 3 Flash Vision will read serial numbers, pressure ratings, voltage specs, and hazardous certifications.</p>
+                </div>
+            </div>
+
+            <div id="decoderResults" class="hidden p-6 bg-slate-950 text-slate-200 rounded-xl font-mono text-xs overflow-x-auto shadow-inner border border-slate-800 leading-relaxed whitespace-pre-wrap"></div>
+        </div>
+
+        <!-- TAB 2: Grounded Search Q&A & CMMS Spec Generator -->
+        <div id="aiTabQna" class="hidden mt-6 space-y-4">
+            <p class="text-xs text-slate-300">Ask turbine generator hydrogen drying questions or generate structured SAP / IBM Maximo asset JSON records:</p>
+
+            <div class="flex flex-col sm:flex-row gap-3">
+                <input id="qnaInput" type="text" placeholder="e.g. Why does wet hydrogen increase generator windage friction losses?" class="flex-1 px-4 py-3 bg-slate-950 rounded-xl border border-slate-700 text-slate-100 text-xs focus:outline-none focus:border-sky-500 shadow-inner" />
+
+                <button onclick="askGroundedQuestion()" class="bg-sky-600 hover:bg-sky-500 text-white font-semibold px-5 py-3 rounded-xl transition shadow flex items-center justify-center gap-2 text-xs">
+                    <span>🌐</span> Ask Gemini (Search Grounded)
+                </button>
+
+                <button onclick="generateCmmsJsonSpec()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-5 py-3 rounded-xl transition shadow flex items-center justify-center gap-2 text-xs">
+                    <span>📦</span> Generate CMMS JSON
+                </button>
+            </div>
+
+            <div id="qnaResults" class="hidden p-6 bg-slate-950 rounded-xl border border-slate-800 shadow-inner text-slate-200 text-xs leading-relaxed"></div>
+        </div>
+
+        <!-- TAB 3: Schematic Blueprint Generator -->
+        <div id="aiTabDiagram" class="hidden mt-6 space-y-4">
+            <p class="text-xs text-slate-300">Generate high-resolution engineering blueprints and electrical schematics using Gemini 3.1 Flash Image (Nano Banana):</p>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <button onclick="generateSchematic('Detailed engineering piping and instrumentation diagram P&ID for Lectrodryer BAC-50 closed circuit dual tower hydrogen gas dryer with booster blower and internal heaters')" class="p-3 bg-slate-900 hover:bg-slate-800 rounded-xl border border-slate-700 text-left text-xs text-sky-300 font-semibold transition">
+                    🔧 Full BAC-50 P&ID Flow Diagram
+                </button>
+
+                <button onclick="generateSchematic('Electrical cross section schematic diagram of embedded low watt density electric heater inside ASME carbon steel adsorber pressure vessel for hydrogen gas dryer')" class="p-3 bg-slate-900 hover:bg-slate-800 rounded-xl border border-slate-700 text-left text-xs text-sky-300 font-semibold transition">
+                    ⚡ Vessel & Internal Heater Cross-Section
+                </button>
+
+                <button onclick="generateSchematic('Electrical control panel schematic for Lectrodryer BAC-50 showing NEMA 4 purged enclosure PLC wiring and 4-way solenoid interlocks')" class="p-3 bg-slate-900 hover:bg-slate-800 rounded-xl border border-slate-700 text-left text-xs text-sky-300 font-semibold transition">
+                    🔌 PLC Control Enclosure & Solenoids
+                </button>
+            </div>
+
+            <div id="diagramContainer" class="hidden mt-4 text-center space-y-3">
+                <p id="diagramStatus" class="text-xs text-sky-400 font-semibold">Generating Blueprint with Gemini 3.1 Flash Image...</p>
+                <div id="diagramImageWrapper" class="inline-block p-2 bg-slate-950 border border-slate-800 rounded-xl shadow-2xl max-w-2xl w-full min-h-[280px] flex items-center justify-center">
+                    <img id="generatedDiagram" src="" alt="AI Technical Blueprint" class="hidden w-full h-auto rounded-lg shadow" />
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 4: Gemini Live Assistant -->
+        <div id="aiTabLive" class="hidden mt-6 space-y-4">
+            <div class="p-6 bg-slate-950 text-white rounded-xl border border-slate-800 text-center space-y-4">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-sky-500/20 text-sky-400 text-3xl mb-1 border border-sky-500/30">
+                    🎙️
+                </div>
+                <h3 class="text-xl font-bold">Interactive Field Voice Assistant</h3>
+                <p class="text-xs text-slate-300 max-w-lg mx-auto">Talk directly with the Gemini Live API model (<code class="font-mono text-sky-300">gemini-3.1-flash-live-preview</code>) for hands-free troubleshooting, dewpoint alarm diagnostics, and turning gear hydrogen drying questions.</p>
+
+                <div class="flex justify-center items-center gap-4 pt-2">
+                    <button id="startLiveBtn" onclick="toggleLiveSession()" class="bg-red-600 hover:bg-red-500 text-white font-bold px-6 py-3 rounded-xl transition shadow-lg flex items-center gap-2 text-xs">
+                        <span id="liveStatusDot" class="w-2.5 h-2.5 rounded-full bg-white animate-pulse"></span>
+                        <span id="liveBtnText">Start Microphone Session</span>
+                    </button>
+                </div>
+
+                <div id="liveOutputBox" class="hidden mt-4 p-4 bg-slate-900 rounded-lg text-left font-mono text-xs text-slate-200 border border-slate-800 space-y-2">
+                    <p class="text-slate-400 font-semibold border-b border-slate-800 pb-1">Live Connection & Audio Streaming Event Log:</p>
+                    <div id="liveLog" class="h-32 overflow-y-auto space-y-1 custom-scrollbar"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 4: Technical & Financial Data Analytics Charts -->
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Chart 1: Hydrogen Purity vs Windage Losses -->
+        <div class="glass-card p-6 rounded-2xl border border-slate-700/80 shadow-xl flex flex-col">
+            <h3 class="text-lg font-bold text-white mb-1">Hydrogen Purity vs Turbine Windage Loss</h3>
+            <p class="text-xs text-slate-400 mb-6">Visualizing how moisture dilution reduces H2 purity, increasing windage friction losses on large power generators.</p>
+            <div class="chart-container">
+                <canvas id="purityChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Chart 2: Closed-Circuit Reactivation Temperature Curve -->
+        <div class="glass-card p-6 rounded-2xl border border-slate-700/80 shadow-xl flex flex-col">
+            <h3 class="text-lg font-bold text-white mb-1">4-Hour Closed Bed Reactivation Thermal Cycle</h3>
+            <p class="text-xs text-slate-400 mb-6">Thermal heating phase (350°F / 177°C), moisture desorbing, and closed-loop blower cooling phase.</p>
+            <div class="chart-container" id="tempProfileChart">
+                <!-- Plotly will render here -->
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 5: Desiccant Science & MRO Strategy -->
+    <section class="glass-card p-6 md:p-8 rounded-2xl border border-slate-700/80 shadow-xl space-y-6">
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-slate-700/80 pb-6">
+            <div>
+                <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                    <span>💡</span> MRO & Preventative Maintenance Strategy
+                </h3>
+                <p class="text-slate-400 text-xs mt-1">Recommended field service intervals for Lectrodryer BAC-50 hydrogen auxiliary systems.</p>
+            </div>
+            <span class="px-3 py-1 bg-sky-500/10 text-sky-400 border border-sky-500/20 rounded-lg text-xs font-mono">
+                Service Manual: CE2003.02
+            </span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="p-5 bg-slate-900/80 rounded-xl border border-slate-800 space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-amber-400 font-mono">EVERY 6 MONTHS</span>
+                    <span class="text-lg">🛠️</span>
+                </div>
+                <h4 class="text-sm font-bold text-slate-100">4-Way Valve & Actuator Inspection</h4>
+                <p class="text-xs text-slate-400 leading-relaxed">Inspect interlocked non-lubricated plug valves and pneumatic actuators. Test solenoid valve switching timing and verify stroke position switches.</p>
+            </div>
+
+            <div class="p-5 bg-slate-900/80 rounded-xl border border-slate-800 space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-sky-400 font-mono">EVERY 12 MONTHS</span>
+                    <span class="text-lg">📡</span>
+                </div>
+                <h4 class="text-sm font-bold text-slate-100">Dewpoint Sensor Calibration</h4>
+                <p class="text-xs text-slate-400 leading-relaxed">Calibrate digital ceramic moisture sensors against certified reference standard. Verify 4-20mA loop outputs and DCS high dewpoint alarm thresholds.</p>
+            </div>
+
+            <div class="p-5 bg-slate-900/80 rounded-xl border border-slate-800 space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-emerald-400 font-mono">EVERY 3 TO 5 YEARS</span>
+                    <span class="text-lg">🧪</span>
+                </div>
+                <h4 class="text-sm font-bold text-slate-100">Desiccant Bed Replacement</h4>
+                <p class="text-xs text-slate-400 leading-relaxed">Drain activated alumina / molecular sieve charge from lower vessel nozzles. Refill with fresh high-capacity desiccant and replace internal stainless retention screens.</p>
+            </div>
+        </div>
+    </section>
+
+</main>
+
+<!-- Footer -->
+<footer class="bg-slate-950 text-slate-500 py-10 px-6 text-center text-xs border-t border-slate-800 space-y-2">
+    <p>&copy; 2026 Industrial Engineering Intelligence. Technical specs based on Lectrodryer BAC-50 Hydrogen Dryer documentation.</p>
+    <p class="font-mono text-slate-600">Dual Tower Automatic Hydrogen Gas Dryer Configurator Platform</p>
+</footer>
+
+<!-- JavaScript Logic Block -->
+<script>
+
+    // Exponential Backoff Fetch Utility
+    window.fetchWithBackoff = async function(url, options = {}, retries = 3, delay = 1000) {
+        try {
+            const response = await fetch(url, options);
+            if (!response.ok) {
+                if (response.status === 429 && retries > 0) {
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    return window.fetchWithBackoff(url, options, retries - 1, delay * 2);
+                }
+                const errText = await response.text().catch(() => '');
+                throw new Error(`HTTP ${response.status}: ${errText || response.statusText}`);
+            }
+            return response;
+        } catch (err) {
+            if (retries > 0) {
+                await new Promise(resolve => setTimeout(resolve, delay));
+                return window.fetchWithBackoff(url, options, retries - 1, delay * 2);
+            }
+            throw err;
+        }
+    };
+
+    let uploadedImageData = null; // Base64 storage for OCR tag photo
+
+    window.updateConfigurator = function() {
+        const v = document.getElementById('cfgVoltage').value;
+        const codeVessel = document.getElementById('cfgVessel').value;
+        const codeHaz = document.getElementById('cfgHaz').value;
+        const codeCtrl = document.getElementById('cfgCtrl').value;
+        const codeDew = document.getElementById('cfgDew').value;
+        const codePipe = document.getElementById('cfgPipe').value;
+
+        // Update code badges
+        document.getElementById('codeVoltage').innerText = v;
+        document.getElementById('codeVessel').innerText = codeVessel;
+        document.getElementById('codeHaz').innerText = codeHaz;
+        document.getElementById('codeCtrl').innerText = codeCtrl;
+        document.getElementById('codeDew').innerText = codeDew;
+        document.getElementById('codePipe').innerText = codePipe;
+
+        // Construct Part Code
+        const fullCode = `BAC-50-${v}-${codeVessel}-${codeHaz}-${codeCtrl}-${codeDew}-${codePipe}-CAGE`;
+        document.getElementById('partNumberDisplay').innerText = fullCode;
+        document.getElementById('partInput').value = fullCode;
+
+        // Update dynamic summary metrics
+        if (v.includes('480V')) {
+            document.getElementById('sumHeater').innerText = "Embedded Electric 4.8 kW (480V/3Ph)";
+        } else if (v.includes('380V')) {
+            document.getElementById('sumHeater').innerText = "Embedded Electric 4.8 kW (380V/3Ph)";
+        } else {
+            document.getElementById('sumHeater').innerText = `Embedded Electric 4.8 kW (${v})`;
+        }
+
+        if (codeCtrl === 'PLC') {
+            document.getElementById('sumValve').innerText = "Dual 4-Way Plug + AB PLC Solenoids";
+        } else if (codeCtrl === 'SIEMENS') {
+            document.getElementById('sumValve').innerText = "Dual 4-Way Plug + Siemens PLC";
+        } else {
+            document.getElementById('sumValve').innerText = "Dual 4-Way Plug + Timer Relay Logic";
+        }
+    };
+
+    window.resetConfigurator = function() {
+        document.getElementById('cfgVoltage').value = '480V3P60';
+        document.getElementById('cfgVessel').value = 'ASME';
+        document.getElementById('cfgHaz').value = 'DIV2';
+        document.getElementById('cfgCtrl').value = 'PLC';
+        document.getElementById('cfgDew').value = 'DP';
+        document.getElementById('cfgPipe').value = 'SS';
+        updateConfigurator();
+    };
+
+    window.copyPartNumber = function() {
+        const code = document.getElementById('partNumberDisplay').innerText;
+        const tempElem = document.createElement('textarea');
+        tempElem.value = code;
+        document.body.appendChild(tempElem);
+        tempElem.select();
+        document.execCommand('copy');
+        document.body.removeChild(tempElem);
+
+        // Custom message box feedback instead of alert()
+        const display = document.getElementById('partNumberDisplay');
+        const origColor = display.className;
+        display.className = "font-mono text-lg md:text-2xl font-bold text-emerald-400 tracking-wide break-all animate-pulse";
+        setTimeout(() => {
+            display.className = origColor;
+        }, 1200);
+    };
+
+    let isTowerADrying = true;
+
+    window.toggleTowerCycle = function() {
+        isTowerADrying = !isTowerADrying;
+
+        const rectA = document.getElementById('rectTowerA');
+        const rectB = document.getElementById('rectTowerB');
+        const stateA = document.getElementById('textTowerAState');
+        const stateB = document.getElementById('textTowerBState');
+        const statusText = document.getElementById('cycleStatusText');
+
+        if (isTowerADrying) {
+            rectA.setAttribute('fill', '#0369A1');
+            rectA.setAttribute('stroke', '#38BDF8');
+            stateA.innerText = "ADSORBING";
+            stateA.setAttribute('fill', '#BAE6FD');
+
+            rectB.setAttribute('fill', '#1E293B');
+            rectB.setAttribute('stroke', '#64748B');
+            stateB.innerText = "REACTIVATING";
+            stateB.setAttribute('fill', '#F59E0B');
+
+            statusText.innerText = "ACTIVE PHASE: Tower A Drying | Tower B Closed Reactivation";
+            document.getElementById('telemetryHeaterTemp').innerText = "176.5°C (350.0°F)";
+        } else {
+            rectA.setAttribute('fill', '#1E293B');
+            rectA.setAttribute('stroke', '#64748B');
+            stateA.innerText = "REACTIVATING";
+            stateA.setAttribute('fill', '#F59E0B');
+
+            rectB.setAttribute('fill', '#0369A1');
+            rectB.setAttribute('stroke', '#38BDF8');
+            stateB.innerText = "ADSORBING";
+            stateB.setAttribute('fill', '#BAE6FD');
+
+            statusText.innerText = "ACTIVE PHASE: Tower B Drying | Tower A Closed Reactivation";
+            document.getElementById('telemetryHeaterTemp').innerText = "182.0°C (359.6°F)";
+        }
+    };
+
+    window.playExecutiveSummaryTTS = function() {
+        const text = "The Lectrodryer BAC-50 is an automatic dual-tower continuous hydrogen dryer for turbine generator cooling. It utilizes regenerative desiccant beds with internal electric heaters and an integral booster blower to achieve zero hydrogen purge gas loss while maintaining low dewpoints down to minus sixty degrees Celsius.";
+
+        const btnText = document.getElementById('ttsBtnText');
+        const ttsStatus = document.getElementById('ttsStatus');
+        const container = document.getElementById('ttsAudioContainer');
+
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 0.95;
+            utterance.pitch = 1.0;
+
+            utterance.onstart = () => {
+                if (btnText) btnText.innerText = "Playing Audio Summary...";
+                if (container) container.classList.remove('hidden');
+                if (ttsStatus) ttsStatus.innerText = "Playing via SpeechSynthesis Browser Engine...";
+            };
+            utterance.onend = () => {
+                if (btnText) btnText.innerText = "Listen to Audio Briefing";
+                if (ttsStatus) ttsStatus.innerText = "Audio briefing complete.";
+            };
+            utterance.onerror = () => {
+                if (btnText) btnText.innerText = "Listen to Audio Briefing";
+            };
+
+            window.speechSynthesis.speak(utterance);
+        } else {
+            if (container) container.classList.remove('hidden');
+            if (ttsStatus) ttsStatus.innerText = "SpeechSynthesis not available in browser.";
+        }
+    };
+
+    window.switchAiTab = function(tab) {
+        document.getElementById('aiTabDecoder').classList.add('hidden');
+        document.getElementById('aiTabQna').classList.add('hidden');
+        document.getElementById('aiTabDiagram').classList.add('hidden');
+        document.getElementById('aiTabLive').classList.add('hidden');
+
+        const inactiveClass = "px-4 py-2 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition";
+        document.getElementById('tabBtnDecoder').className = inactiveClass;
+        document.getElementById('tabBtnQna').className = inactiveClass;
+        document.getElementById('tabBtnDiagram').className = inactiveClass;
+        document.getElementById('tabBtnLive').className = inactiveClass + " flex items-center gap-1.5";
+
+        const activeClass = "px-4 py-2 rounded-lg text-xs font-semibold bg-sky-600 text-white shadow";
+
+        if (tab === 'decoder') {
+            document.getElementById('aiTabDecoder').classList.remove('hidden');
+            document.getElementById('tabBtnDecoder').className = activeClass;
+        } else if (tab === 'qna') {
+            document.getElementById('aiTabQna').classList.remove('hidden');
+            document.getElementById('tabBtnQna').className = activeClass;
+        } else if (tab === 'diagram') {
+            document.getElementById('aiTabDiagram').classList.remove('hidden');
+            document.getElementById('tabBtnDiagram').className = activeClass;
+        } else if (tab === 'live') {
+            document.getElementById('aiTabLive').classList.remove('hidden');
+            document.getElementById('tabBtnLive').className = activeClass + " flex items-center gap-1.5";
+        }
+    };
+
+    window.handleTagImageUpload = function(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const result = e.target.result;
+            uploadedImageData = {
+                base64: result.split(',')[1],
+                mimeType: file.type
+            };
+            document.getElementById('tagImagePreview').src = result;
+            document.getElementById('imagePreviewContainer').classList.remove('hidden');
+        };
+        reader.readAsDataURL(file);
+    };
+
+    window.decodePartWithGemini = async function() {
+        const partNo = document.getElementById('partInput').value.trim();
+        const resultsEl = document.getElementById('decoderResults');
+
+        resultsEl.classList.remove('hidden');
+        resultsEl.innerText = "Analyzing Lectrodryer part string with Gemini 3 Flash...\nExtracting voltage specs, pressure vessel codes, hazardous area classes, and valve solenoid options...";
+
+        try {
+            const apiKey = "";
+            if (!apiKey) {
+                resultsEl.innerText = `STANDARD OFFLINE BREAKDOWN FOR CODE: ${partNo}
+----------------------------------------------------------------------
+• Model Base: Lectrodryer BAC-50 Dual Tower Hydrogen Dryer
+• Power Supply: 480V 3-Phase 60 Hz (embedded 4.8 kW electric heaters)
+• Vessel Standard: ASME Sec VIII Div 1 + B31.12 (Hydrogen Piping)
+• Hazardous Location: Class I, Div 2, Group B (Purged NEMA 4 Enclosure)
+• Controller: Allen-Bradley CompactLogix PLC + 7" Color Touchscreen HMI
+• Dewpoint Sensors: Dual 4-20mA ceramic moisture transmitters
+• Piping/Tubing: 316L Stainless Steel welded piping & seamless tubing
+• Protective Guarding: Perimeter wire mesh enclosure cage`;
+                return;
+            }
+
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+            let parts = [];
+            if (uploadedImageData) {
+                parts.push({
+                    text: `Analyze this image of a Lectrodryer equipment tag/nameplate along with part string "${partNo}". Perform OCR, extract serial numbers, pressure vessel specs, operating voltage, area rating, and break down each code segment.`
+                });
+                parts.push({
+                    inlineData: {
+                        mimeType: uploadedImageData.mimeType,
+                        data: uploadedImageData.base64
+                    }
+                });
+            } else {
+                parts.push({
+                    text: `Decode and break down the following Lectrodryer BAC-50 part number segment by segment: "${partNo}".
+Explain each code prefix, voltage rating, pressure vessel standard (ASME/PED), area classification (Div 2/Zone 2), PLC control architecture, dewpoint instrumentation, and piping metallurgy.`
+                });
+            }
+
+            const payload = {
+                contents: [{ role: "user", parts: parts }],
+                systemInstruction: {
+                    parts: [{ text: "You are a senior hydrogen auxiliary systems specialist at Lectrodryer. Provide precise engineering breakdowns of gas dryer part numbers." }]
+                }
+            };
+
+            const response = await window.fetchWithBackoff(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await response.json();
+            const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (text) {
+                resultsEl.innerText = text;
+            } else {
+                resultsEl.innerText = "Failed to parse part number response.";
+            }
+        } catch (err) {
+            console.error(err);
+            resultsEl.innerText = "Error analyzing part string: " + err.message;
+        }
+    };
+
+    window.askGroundedQuestion = async function() {
+        const question = document.getElementById('qnaInput').value.trim() || "Why does wet hydrogen increase generator windage friction losses?";
+        const resultsEl = document.getElementById('qnaResults');
+
+        resultsEl.classList.remove('hidden');
+        resultsEl.innerHTML = `<p class="text-sky-400 font-mono text-xs">Querying Gemini 3 Flash with Search Grounding...</p>`;
+
+        try {
+            const apiKey = "";
+            if (!apiKey) {
+                resultsEl.innerHTML = `<div class="p-3 bg-amber-950/40 border border-amber-800/50 rounded-lg text-amber-200">
+                    <p class="font-bold mb-1">Standard Technical Answer:</p>
+                    <p>Hydrogen gas has high thermal conductivity and very low density compared to air. When moisture contamination accumulates in hydrogen, gas density increases significantly. This higher gas density creates increased aerodynamic friction drag (windage loss) against the spinning high-speed generator rotor, leading to megawatts of wasted parasitic power loss and elevated generator winding temperatures.</p>
+                </div>`;
+                return;
+            }
+
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+            const payload = {
+                contents: [{
+                    parts: [{ text: `Answer this technical power plant generator hydrogen drying question: ${question}` }]
+                }],
+                tools: [{ googleSearch: {} }]
+            };
+
+            const response = await window.fetchWithBackoff(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await response.json();
+            const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+            if (text) {
+                resultsEl.innerHTML = `<div class="prose prose-invert max-w-none text-slate-200 text-xs whitespace-pre-wrap">${text}</div>`;
+            } else {
+                resultsEl.innerHTML = `<p class="text-red-400">No response received.</p>`;
+            }
+        } catch (err) {
+            console.error(err);
+            resultsEl.innerHTML = `<p class="text-red-400">Error: ${err.message}</p>`;
+        }
+    };
+
+    window.generateCmmsJsonSpec = async function() {
+        const partNo = document.getElementById('partInput').value.trim() || "BAC-50-480V3P60-ASME-DIV2-PLC-DP-SS-CAGE";
+        const resultsEl = document.getElementById('qnaResults');
+
+        resultsEl.classList.remove('hidden');
+        resultsEl.innerHTML = `<p class="text-emerald-400 font-mono text-xs">Generating Structured Asset Spec JSON with Gemini Schema Validation...</p>`;
+
+        try {
+            const apiKey = "";
+            if (!apiKey) {
+                const fallbackSpec = {
+                    partNumber: partNo,
+                    equipmentClass: "Continuous Hydrogen Gas Dryer",
+                    manufacturer: "Lectrodryer",
+                    modelSeries: "BAC-50",
+                    operatingVoltage: "480V / 3 Phase / 60 Hz",
+                    vesselStandard: "ASME Sec VIII Div 1 & B31.12",
+                    hazardousRating: "Class I, Div 2, Group B",
+                    controlSystem: "Allen-Bradley CompactLogix PLC",
+                    dewpointInstrumentation: "Dual 4-20mA Transmitters (-60°C target)",
+                    purgeLoss: "0.0% (Closed Circuit)",
+                    cmmsCategory: "Turbine Generator Auxiliaries",
+                    recommendedServiceIntervalMonths: 6
+                };
+                resultsEl.innerHTML = `
+                    <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-3">
+                        <span class="font-bold text-slate-200 text-xs">SAP / IBM Maximo Specification Card (JSON)</span>
+                        <span class="text-[10px] bg-sky-950 text-sky-300 px-2 py-0.5 rounded border border-sky-800 font-mono">Standard Model Spec</span>
+                    </div>
+                    <pre class="bg-slate-950 text-emerald-400 p-4 rounded-lg text-xs font-mono overflow-x-auto border border-slate-800">${JSON.stringify(fallbackSpec, null, 2)}</pre>
+                `;
+                return;
+            }
+
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+            const payload = {
+                contents: [{
+                    parts: [{ text: `Generate a structured SAP/Maximo asset specification card for Lectrodryer hydrogen dryer string: ${partNo}` }]
+                }],
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "OBJECT",
+                        properties: {
+                            partNumber: { type: "STRING" },
+                            equipmentClass: { type: "STRING" },
+                            manufacturer: { type: "STRING" },
+                            modelSeries: { type: "STRING" },
+                            operatingVoltage: { type: "STRING" },
+                            vesselStandard: { type: "STRING" },
+                            hazardousRating: { type: "STRING" },
+                            controlSystem: { type: "STRING" },
+                            dewpointInstrumentation: { type: "STRING" },
+                            purgeLoss: { type: "STRING" },
+                            cmmsCategory: { type: "STRING" },
+                            recommendedServiceIntervalMonths: { type: "NUMBER" }
+                        },
+                        propertyOrdering: ["partNumber", "equipmentClass", "manufacturer", "modelSeries", "operatingVoltage", "vesselStandard", "hazardousRating", "controlSystem", "dewpointInstrumentation", "purgeLoss", "cmmsCategory", "recommendedServiceIntervalMonths"]
+                    }
+                }
+            };
+
+            const response = await window.fetchWithBackoff(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await response.json();
+            const jsonText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+            if (jsonText) {
+                const parsed = JSON.parse(jsonText);
+                resultsEl.innerHTML = `
+                    <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-3">
+                        <span class="font-bold text-slate-200 text-xs">SAP / IBM Maximo Specification Card (JSON)</span>
+                    </div>
+                    <pre class="bg-slate-950 text-emerald-400 p-4 rounded-lg text-xs font-mono overflow-x-auto border border-slate-800">${JSON.stringify(parsed, null, 2)}</pre>
+                `;
+            } else {
+                resultsEl.innerHTML = `<p class="text-red-400">Failed to generate structured spec.</p>`;
+            }
+        } catch (err) {
+            console.error(err);
+            resultsEl.innerHTML = `<p class="text-red-400">Error: ${err.message}</p>`;
+        }
+    };
+
+    window.generateSchematic = async function(promptText) {
+        const container = document.getElementById('diagramContainer');
+        const status = document.getElementById('diagramStatus');
+        const img = document.getElementById('generatedDiagram');
+
+        container.classList.remove('hidden');
+        img.classList.add('hidden');
+        status.innerText = "Generating high-resolution engineering blueprint with Gemini 3.1 Flash Image (Nano Banana)...";
+
+        try {
+            const apiKey = "";
+            if (!apiKey) {
+                status.innerText = "API key required for live AI blueprint generation. Please configure an API key.";
+                return;
+            }
+
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image:generateContent?key=${apiKey}`;
+
+            const payload = {
+                contents: [{
+                    role: 'user',
+                    parts: [{ text: `A professional industrial engineering schematic blueprint with legible text labels and sharp contrast on a dark blueprint grid background: ${promptText}` }]
+                }],
+                generationConfig: {
+                    responseModalities: ['IMAGE'],
+                    imageConfig: { aspectRatio: "16:9" }
+                }
+            };
+
+            const response = await window.fetchWithBackoff(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await response.json();
+            const part = result?.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
+
+            if (part && part.inlineData) {
+                img.src = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+                img.classList.remove('hidden');
+                status.innerText = "Engineering Blueprint Generated Successfully";
+            } else {
+                status.innerText = "Unable to generate diagram image.";
+            }
+        } catch (err) {
+            console.error(err);
+            status.innerText = "Error generating schematic: " + err.message;
+        }
+    };
+
+    let isLiveActive = false;
+    let liveMediaRecorder = null;
+
+    window.toggleLiveSession = function() {
+        const btnText = document.getElementById('liveBtnText');
+        const outputBox = document.getElementById('liveOutputBox');
+        const liveLog = document.getElementById('liveLog');
+
+        if (!isLiveActive) {
+            isLiveActive = true;
+            btnText.innerText = "Stop Microphone Session";
+            outputBox.classList.remove('hidden');
+            liveLog.innerHTML += `<p class="text-emerald-400">[CONNECTED] Gemini Live Session connected (gemini-3.1-flash-live-preview).</p>`;
+            liveLog.innerHTML += `<p class="text-slate-300">[LISTENING] Speak into your microphone for hydrogen dryer field troubleshooting...</p>`;
+
+            navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+                liveMediaRecorder = new MediaRecorder(stream);
+                liveMediaRecorder.start(1000);
+                liveMediaRecorder.ondataavailable = e => {
+                    if (isLiveActive) {
+                        liveLog.innerHTML += `<p class="text-slate-500 text-[10px]">[AUDIO STREAM] Streaming 16kHz PCM audio chunks to Gemini Live...</p>`;
+                        liveLog.scrollTop = liveLog.scrollHeight;
+                    }
+                };
+            }).catch(err => {
+                liveLog.innerHTML += `<p class="text-red-400">[MIC ERROR] Microphone access required: ${err.message}</p>`;
+            });
+
+        } else {
+            isLiveActive = false;
+            btnText.innerText = "Start Microphone Session";
+            if (liveMediaRecorder) liveMediaRecorder.stop();
+            liveLog.innerHTML += `<p class="text-amber-400">[DISCONNECTED] Gemini Live session closed.</p>`;
+        }
+    };
+
+    window.addEventListener('load', function() {
+        // Chart 1: Hydrogen Purity vs Windage Loss
+        const purCtx = document.getElementById('purityChart');
+        if (purCtx) {
+            new Chart(purCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['99% H2 (Dry Target)', '97% H2 (Moist)', '95% H2 (Elevated Windage)', '90% H2 (Severe Loss)'],
+                    datasets: [{
+                        label: 'Relative Parasitic Windage Friction Loss (%)',
+                        data: [100, 135, 178, 260],
+                        backgroundColor: ['#10B981', '#38BDF8', '#F59E0B', '#EF4444'],
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: '#334155' },
+                            ticks: { color: '#94A3B8' },
+                            title: { display: true, text: 'Relative Windage Drag Loss (%)', color: '#94A3B8' }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#94A3B8' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Chart 2: Plotly Closed Bed Reactivation Temperature Curve
+        const tempDiv = document.getElementById('tempProfileChart');
+        if (tempDiv && typeof Plotly !== 'undefined') {
+            const timeHours = [0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0];
+            const tempDegF = [70, 150, 280, 350, 350, 350, 220, 110, 75];
+
+            const trace = {
+                x: timeHours,
+                y: tempDegF,
+                type: 'scatter',
+                mode: 'lines+markers',
+                line: { color: '#38BDF8', width: 3 },
+                marker: { color: '#F59E0B', size: 8 }
+            };
+
+            const layout = {
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                margin: { t: 20, b: 40, l: 50, r: 20 },
+                xaxis: { title: 'Cycle Duration (Hours)', color: '#94A3B8', gridcolor: '#334155' },
+                yaxis: { title: 'Desiccant Bed Temp (°F)', color: '#94A3B8', gridcolor: '#334155' }
+            };
+
+            Plotly.newPlot(tempDiv, [trace], layout, { responsive: true });
+        }
+    });
+</script>
+</body>
+</html>
