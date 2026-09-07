@@ -302,7 +302,7 @@ Turn off your VPN, wait a few seconds for your normal connection to restore, and
 
     // MARK: - Launch Zoom
 
-    static func makeLaunchZoomCommand() -> String {
+    static func makeLaunchZoomCommand(usePersistentSandbox: Bool = false) -> String {
         guard FileManager.default.fileExists(atPath: zoomBinaryPath) else {
             return #"""
             echo "Launch mode: directOpenFallback (Zoom binary not found at expected path)"
@@ -417,6 +417,11 @@ Turn off your VPN, wait a few seconds for your normal connection to restore, and
         trap cleanup EXIT
         /bin/echo "$encoded_profile" | /usr/bin/base64 --decode > "$profile_path" || exit 1
 
+        \(usePersistentSandbox ? #"""
+        echo "Launch mode: persistentSandbox (forced — MAC spoofing blocked on this system)"
+        launch_persistent_sandbox || exit 1
+        exit 0
+        """# : "")
         echo "Launch mode: bootstrapThenNormal"
         /usr/bin/sandbox-exec -f "$profile_path" "$zoom_binary" >/dev/null 2>&1 &
         bootstrap_pid=$!

@@ -846,7 +846,9 @@ The sandbox launch will still block Zoom from reading your hardware MAC address.
     }
 
     private func makeLaunchZoomCommand() -> String {
-        ShellCommands.makeLaunchZoomCommand()
+        // On Apple Silicon + macOS 14+, Zoom re-reads hardware identifiers on every launch,
+        // so the bootstrap-then-normal approach doesn't hold. Keep Zoom in the sandbox permanently.
+        ShellCommands.makeLaunchZoomCommand(usePersistentSandbox: ShellCommands.isMacSpoofingBlocked())
     }
 
     private func appError(_ message: String) -> NSError {
